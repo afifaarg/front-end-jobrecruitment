@@ -12,8 +12,7 @@ export default function SignIn() {
 
   // Handler for form submission
   const handleSubmit = (e) => {
-    e.preventDefault();
-    setError("");
+    e.preventDefault(); // Prevent form submission
 
     axios
       .post("http://127.0.0.1:8000/backendAPI/login/", {
@@ -25,48 +24,23 @@ export default function SignIn() {
           const userData = response.data.user_data; // Ensure this matches your response structure
 
           if (userData) {
-            // Create a new JSON structure
-            const manipulableJson = {
-              username: userData.username,
-              password: userData.password, // Keep password only if needed
-              name: userData.name,
-              email: userData.email,
-              experienceYears: userData.experienceYears,
-              uniqueID: userData.uniqueID,
-              phone: userData.phone,
-              country: userData.country,
-              city: userData.city,
-              description: userData.description || ``, // Fallback for undefined
-              skills: userData.skills || [], // Default to empty array if no skills
-              educations: userData.educations
-                ? userData.educations.map((edu) => ({
-                    degree: edu.degree,
-                    field: edu.field,
-                    institution: edu.institution,
-                    start_date: edu.start_date,
-                    end_date: edu.end_date,
-                    description: edu.description || "", // Fallback for undefined
-                  }))
-                : [],
-              experiences: userData.experiences
-                ? userData.experiences.map((exp) => ({
-                    job_title: exp.job_title,
-                    company: exp.company,
-                    location: exp.location,
-                    start_date: exp.start_date,
-                    end_date: exp.end_date,
-                    responsibilities: exp.responsibilities || "", // Fallback for undefined
-                  }))
-                : [],
-            };
-
+            console.log(userData);
             // Save the manipulable JSON structure to localStorage as a string
-            localStorage.setItem("userData", JSON.stringify(manipulableJson));
-
-            // save tokens
+            localStorage.setItem("userID", userData.id);
+            // Save tokens
             localStorage.setItem("access", response.data.access);
             localStorage.setItem("refresh", response.data.refresh);
-            navigate("/Landed");
+            // Check if the user is an admin
+            if (userData.role === "admin") {
+              console.log(response.data);
+              localStorage.setItem(
+                "allUsers",
+                JSON.stringify(response.data.user_data.all_users)
+              ); // Assuming res.data contains the users
+              navigate("/adminDashboard"); // Navigate to the admin dashboard
+            } else {
+              navigate("/Landed"); // Navigate to the regular user landing page
+            }
           } else {
             console.error("User data is undefined");
           }

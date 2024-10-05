@@ -15,7 +15,49 @@ from rest_framework_simplejwt.views import TokenBlacklistView
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import api_view
+from django.core.validators import validate_email
 
+@api_view(['POST'])
+def register_admin(request):
+    if request.method == 'POST':
+        data = request.data
+        username = data.get('username')
+        name = data.get('name')
+        email = data.get('email')
+        gender = data.get('gender')
+        password = data.get('password')
+
+        # Validate required fields
+        if not username or not name or not email or not gender or not password:
+            return Response({"error": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate email format
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response({"error": "Invalid email format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check for existing user
+        if PlatformUser.objects.filter(username=username).exists():
+            return Response({"error": "Username already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if PlatformUser.objects.filter(email=email).exists():
+            return Response({"error": "Email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create and save the new PlatformUser object
+        platform_user = PlatformUser(
+            username=username,
+            email=email,
+            name=name,
+            gender=gender,
+            role='admin'  # Set the role to admin
+        )
+        platform_user.set_password(password)  # Hash the password
+        platform_user.save()  # Save the user to the database
+        
+        return Response({"message": "Admin user registered successfully."}, status=status.HTTP_201_CREATED)
+    
 class LogoutView(APIView):
     def post(self, request):
         refresh_token = request.data.get("refresh_token")  # Get refresh token from the request body
@@ -82,75 +124,106 @@ class PlatformUserViewSet(viewsets.ModelViewSet):
             "access_token": str(refresh.access_token),
             "message": "User registered successfully"
         }, status=status.HTTP_201_CREATED)
-    
-class LoginView(APIView):
-    def post(self, request, *args, **kwargs):
-        username = request.data.get("username")
-        password = request.data.get("password")
 
-        if username is None or password is None:
-            return Response({'error': 'Please provide both username and password'}, status=status.HTTP_400_BAD_REQUEST)
+    @transaction.atomic  # Ensure that all saves are part of the same transaction
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()  # Get the current user instance
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
 
-        user = authenticate(username=username, password=password)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
 
-        if not user:
-            print("wrong credentials")
-            return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Optional: Generate JWT Token
+        # Handle related models: skills, education, experience, and desired job
+        if 'skills' in request.data:
+            user.skills.all().delete() 
+            skills_data = [{'name': skill} for skill in request.data['skills']]
+            skills_serializer = SkillSerializer(data=skills_data, many=True)
+            if skills_serializer.is_valid(raise_exception=True):
+                skills_serializer.save(user=user)  # Save related skills
+
+        if 'educations' in request.data:
+            user.educations.all().delete()
+            educations_serializer = EducationSerializer(data=request.data['educations'], many=True)
+            if educations_serializer.is_valid(raise_exception=True):
+                educations_serializer.save(user=user)  # Save related educations
+
+        if 'experiences' in request.data:
+            user.experiences.all().delete()
+            experiences_serializer = ExperienceSerializer(data=request.data['experiences'], many=True)
+            if experiences_serializer.is_valid(raise_exception=True):
+                experiences_serializer.save(user=user)  # Save related experiences
+
+        if 'desired_job' in request.data:
+            user.desired_job.delete() 
+            desired_job_serializer = DesiredJobSerializer(data=request.data['desired_job'])
+            if desired_job_serializer.is_valid(raise_exception=True):
+                desired_job_serializer.save(user=user)  # Save related desired job
+
+        # Generate JWT tokens for the user (if needed)
         refresh = RefreshToken.for_user(user)
 
-        # Fetch user information
-        loginInfomations = user
-        yourInfo = PlatformUser.objects.get(username=username)  # Ensure user is an instance of PlatformUser
-        skills = list(yourInfo.skills.values_list('name', flat=True))
-        educations = list(yourInfo.educations.values())
-        experiences = list(yourInfo.experiences.values())
-        desiredJob = DesiredJob.objects.first()  # Assuming one desired job per user
-
-        # Prepare response data
-        response_data = {
-            'username': loginInfomations.username,
-            'password': loginInfomations.password,  # Consider security implications of returning password
-            'name': yourInfo.name,
-            'experienceYears': yourInfo.total_years_of_experience,
-            'uniqueID': yourInfo.unique_id,
-            'email': yourInfo.email,  # Ensure you have this field in your PlatformUser model
-            'phone': yourInfo.phone,
-            'country': yourInfo.country,
-            'city': yourInfo.city,
-            'description': yourInfo.description, 
-            'skills': skills,
-            'educations': [{
-                'degree': education['degree'],
-                'field': education['field'],
-                'institution': education['institution'],
-                'start_date': education['start_date'],
-                'end_date': education['end_date'],
-                'description': education['description'],
-            } for education in educations],
-            'experiences': [{
-                'job_title': experience['job_title'],
-                'company': experience['company'],
-                'location': experience['location'],
-                'start_date': experience['start_date'],
-                'end_date': experience['end_date'],
-                'responsibilities': experience['responsibilities'],
-            } for experience in experiences],
-            'desiredJob': {
-                'job_title': desiredJob.job_title if desiredJob else None,
-                'job_location': desiredJob.job_location if desiredJob else None,
-                'salary_expectation': desiredJob.salary_expectation if desiredJob else None,
-                'contract_type': desiredJob.contract_type if desiredJob else None,
-                'job_type': desiredJob.job_type if desiredJob else None,
-                'work_preference': desiredJob.work_preference if desiredJob else None,
-                'description': desiredJob.description if desiredJob else None,
-            } if desiredJob else ''
-        }
-
         return Response({
-            'message': 'Login successful!',
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user_data': response_data
+            "user": PlatformUserSerializer(user).data,
+            "refresh_token": str(refresh),
+            "access_token": str(refresh.access_token),
+            "message": "User updated successfully"
         }, status=status.HTTP_200_OK)
+
+class LoginView(APIView):
+ def post(self, request, *args, **kwargs):
+    username = request.data.get("username")
+    password = request.data.get("password")
+
+    if username is None or password is None:
+        return Response({'error': 'Please provide both username and password'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = authenticate(username=username, password=password)
+
+    if not user:
+        print("wrong credentials")
+        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Optional: Generate JWT Token
+    refresh = RefreshToken.for_user(user)
+
+    # Fetch user information
+    yourInfo = PlatformUser.objects.get(username=username)  # Ensure user is an instance of PlatformUser
+
+    # Prepare response data
+    response_data = {
+        'role': yourInfo.role,
+        'id': yourInfo.id,
+    }
+
+    # Check if the user is an admin
+    if yourInfo.role == 'admin':
+        # Fetch all users' data except admins, if needed
+        all_users_data = PlatformUser.objects.exclude(role='admin')  # Adjust based on your requirements
+        all_users_response = [
+            {
+                'id': user.id,
+                'username': user.username,
+                'name': user.name,
+                'email': user.email,
+                'role': user.role,
+                'gender':user.gender,
+                'joinedDate': yourInfo.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+                'uniqueID':user.unique_id,
+                'experienceYears':user.total_years_of_experience,
+                'phone': user.phone,
+                'country': user.country,
+                'city': user.city,
+            }
+            for user in all_users_data
+        ]
+        
+        
+        response_data['all_users'] = all_users_response  # Include all users in the response
+    print('here')
+    return Response({
+        'message': 'Login successful!',
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+        'user_data': response_data
+    }, status=status.HTTP_200_OK)

@@ -5,21 +5,24 @@ import Education from "../components/Education";
 import Experience from "../components/Experience";
 import Step from "../components/Step";
 import Thankyou from "../components/Thankyou";
-import DesiredJob from "../components/Desiredjob";
 import LoginInformations from "../components/Logininformations";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import PersonalInfo from "../components/PersonalInfo";
+import ProfessionalInfo from "../components/ProfessionalInfo";
+
 export default function Signup() {
   // States
   const [stepNumber, setStepNumber] = useState(1);
   const [goBackVisible, setGoBackVisible] = useState("invisible");
   const [steps, setSteps] = useState([
     { id: 1, title: "General Informations", active: true },
-    { id: 2, title: "Skills", active: false },
-    { id: 3, title: "Education", active: false },
-    { id: 4, title: "Experience", active: false },
-    { id: 5, title: "Desired Job", active: false },
-    { id: 6, title: "Login Informations", active: false },
+    { id: 2, title: "Personal Informations", active: true },
+    { id: 3, title: "Professional Informations", active: true },
+    { id: 4, title: "Skills", active: false },
+    { id: 5, title: "Education", active: false },
+    { id: 6, title: "Experience", active: false },
+    { id: 7, title: "Login Informations", active: false },
   ]);
 
   // State management for forms
@@ -30,7 +33,24 @@ export default function Signup() {
     country: "",
     city: "",
   });
+
   const [isEmpty, setIsEmpty] = useState(false);
+  const [yourPersonalInfo, setYourPersonalInfo] = useState({
+    profile_pic: "",
+    gender: "",
+    birth_Date: "",
+    description: "",
+  });
+
+  const [professionalInfo, setProfessionalInfo] = useState({
+    github_link: "",
+    linkedin_link: "",
+    portfolio_link: "",
+    resume_file: "",
+    proficiency: "",
+  });
+  const [isPersonalEmpty, setIsPersonalEmpty] = useState(false);
+  const [isProfessionalEmpty, setIsProfessionalEmpty] = useState(false);
 
   const [skills, setSkills] = useState([]);
   const [isSkillsEmpty, setIsSkillsEmpty] = useState(false);
@@ -59,18 +79,6 @@ export default function Signup() {
   ]);
   const [isExperiencesEmpty, setIsExperiencesEmpty] = useState(false);
 
-  const [desiredJob, setdesiredJob] = useState({
-    job_title: "",
-    job_location: "",
-    salary_expectation: "",
-    contract_type: "",
-    job_type: "",
-    work_preference: "",
-    description: "",
-  });
-
-  const [isJobEmpty, setIsJobEmpty] = useState(false);
-
   const [loginInfomations, setloginInfomations] = useState({
     username: "",
     password: "",
@@ -98,7 +106,15 @@ export default function Signup() {
         phone: yourInfo.phone,
         country: yourInfo.country,
         city: yourInfo.city,
-        description: yourInfo.description,
+        description: yourPersonalInfo.description,
+        github_link: professionalInfo.github_link,
+        linkedin_link: professionalInfo.linkedin_link,
+        portfolio_link: professionalInfo.portfolio_link,
+        resume_file: professionalInfo.resume_file,
+        proficiency: professionalInfo.proficiency,
+        profile_pic: yourPersonalInfo.profile_pic,
+        gender: yourPersonalInfo.gender,
+        birth_Date: yourPersonalInfo.birth_Date,
         skills: skills, // Assuming each skill is a string
         educations: educations.map((education) => ({
           degree: education.degree,
@@ -116,15 +132,6 @@ export default function Signup() {
           end_date: experience.end_date,
           responsibilities: experience.responsibilities,
         })), // Ensure experiences is an array of objects with correct fields
-        desiredJob: {
-          job_title: desiredJob.job_title,
-          job_location: desiredJob.job_location,
-          salary_expectation: desiredJob.salary_expectation,
-          contract_type: desiredJob.contract_type,
-          job_type: desiredJob.job_type,
-          work_preference: desiredJob.work_preference,
-          description: desiredJob.description,
-        }, // Ensure desiredJob is a flat object with correct fields
       };
 
       // Log the payload for debugging
@@ -132,7 +139,7 @@ export default function Signup() {
 
       // Axios POST request to the Django backend
       const response = await axios.post(
-        "http://localhost:8000/backendAPI/signup/",
+        "http://localhost:8000/backendAPI/users/",
         payload, // Send the payload as is, no need to stringify
         {
           headers: {
@@ -176,35 +183,34 @@ export default function Signup() {
     }
     setIsEmpty(false);
 
-    if (stepNumber === 2 && skills.length === 0) {
+    if (stepNumber === 2 && yourPersonalInfo.length === 0) {
+      setIsSkillsEmpty(true);
+      return;
+    }
+    if (stepNumber === 3 && professionalInfo.length === 0) {
+      setIsSkillsEmpty(true);
+      return;
+    }
+    if (stepNumber === 4 && skills.length === 0) {
       setIsSkillsEmpty(true);
       return;
     }
     setIsSkillsEmpty(false);
 
-    if (stepNumber === 3 && educations.length === 0) {
+    if (stepNumber === 5 && educations.length === 0) {
       setIsEducationsEmpty(true);
       return;
     }
     setIsEducationsEmpty(false);
 
-    if (stepNumber === 4 && experiences.length === 0) {
+    if (stepNumber === 6 && experiences.length === 0) {
       setIsExperiencesEmpty(true);
       return;
     }
     setIsExperiencesEmpty(false);
 
     if (
-      stepNumber === 5 &&
-      Object.values(desiredJob).some((value) => value.length === 0)
-    ) {
-      setIsJobEmpty(true);
-      return;
-    }
-    setIsJobEmpty(false);
-
-    if (
-      stepNumber === 6 &&
+      stepNumber === 7 &&
       Object.values(loginInfomations).some((value) => value.length === 0)
     ) {
       setIsLoginInfoEmpty(true);
@@ -213,7 +219,7 @@ export default function Signup() {
     setIsLoginInfoEmpty(false);
 
     // Submit form on the last step
-    if (stepNumber === 6) {
+    if (stepNumber === 7) {
       submitForm();
     } else {
       setStepNumber((prevStep) => prevStep + 1);
@@ -228,6 +234,14 @@ export default function Signup() {
     const { name, value } = event.target;
     setYourInfo((prevInfo) => ({ ...prevInfo, [name]: value }));
   };
+  const changeYourPersonalInfo = (event) => {
+    const { name, value } = event.target;
+    setYourPersonalInfo((prevInfo) => ({ ...prevInfo, [name]: value }));
+  };
+  const changeYourProfessionalInfo = (event) => {
+    const { name, value } = event.target;
+    setProfessionalInfo((prevInfo) => ({ ...prevInfo, [name]: value }));
+  };
 
   const handleSkillChange = (newSkills) => {
     setSkills(newSkills);
@@ -241,11 +255,6 @@ export default function Signup() {
     setExperiences(newExperience);
   };
 
-  const handleJobChange = (event) => {
-    const { name, value } = event.target;
-    console.log(event.target);
-    setdesiredJob((prevJobDetails) => ({ ...prevJobDetails, [name]: value }));
-  };
   const handleLoginInfoChange = (event) => {
     const { name, value } = event.target;
     setloginInfomations((prevInfo) => ({ ...prevInfo, [name]: value }));
@@ -283,6 +292,22 @@ export default function Signup() {
                   />
                 )}
                 {stepNumber === 2 && (
+                  <PersonalInfo
+                    onChangeYourInfo={changeYourPersonalInfo}
+                    yourInfo={yourPersonalInfo}
+                    currentStep={stepNumber}
+                    isEmpty={isPersonalEmpty}
+                  />
+                )}
+                {stepNumber === 3 && (
+                  <ProfessionalInfo
+                    onChangeYourInfo={changeYourProfessionalInfo}
+                    yourInfo={professionalInfo}
+                    currentStep={stepNumber}
+                    isEmpty={isProfessionalEmpty}
+                  />
+                )}
+                {stepNumber === 4 && (
                   <Skills
                     currentStep={stepNumber}
                     skills={skills}
@@ -290,7 +315,7 @@ export default function Signup() {
                     onChangeSkill={handleSkillChange}
                   />
                 )}
-                {stepNumber === 3 && (
+                {stepNumber === 5 && (
                   <Education
                     currentStep={stepNumber}
                     educations={educations}
@@ -298,7 +323,7 @@ export default function Signup() {
                     onChangeEducationInfo={handleEducationChange}
                   />
                 )}
-                {stepNumber === 4 && (
+                {stepNumber === 6 && (
                   <Experience
                     currentStep={stepNumber}
                     experiences={experiences}
@@ -306,15 +331,8 @@ export default function Signup() {
                     onChangeExperienceInfo={handleExperienceChange}
                   />
                 )}
-                {stepNumber === 5 && (
-                  <DesiredJob
-                    currentStep={stepNumber}
-                    jobDetails={desiredJob}
-                    isJobEmpty={isJobEmpty}
-                    onChangeJobDetails={handleJobChange}
-                  />
-                )}
-                {stepNumber === 6 && (
+
+                {stepNumber === 7 && (
                   <LoginInformations
                     currentStep={stepNumber}
                     loginDetails={loginInfomations}

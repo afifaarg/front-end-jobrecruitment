@@ -8,6 +8,8 @@ import SignIn from "./pages/SignIn";
 import Signup from "./pages/Signup";
 import ProfileComponent from "./pages/Landingpage";
 import { Privateroute } from "./components/Privateroute";
+import AdminDashboard from "./pages/adminDashboard";
+import comingSoon from "./pages/Comingsoon";
 function App() {
   return (
     <>
@@ -18,7 +20,15 @@ function App() {
           {/* Protected route */}
           <Route
             path="/Landed"
+            element={<Privateroute element={comingSoon} />}
+          />
+          <Route
+            path="/Profile"
             element={<Privateroute element={ProfileComponent} />}
+          />
+          <Route
+            path="/adminDashboard"
+            element={<Privateroute element={AdminDashboard} />}
           />
         </Routes>
       </BrowserRouter>

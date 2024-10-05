@@ -2,29 +2,7 @@ import React from "react";
 import Education from "./Education";
 import Skills from "./Skills";
 import Experience from "./Experience";
-// InputField component for reusable input fields
-const InputField = ({
-  label,
-  name,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}) => (
-  <div className="flex flex-col mb-4">
-    <label htmlFor={name}>{label}</label>
-    <input
-      type={type}
-      name={name}
-      value={value}
-      onChange={onChange}
-      className={`font-medium w-full mt-1 p-2 pl-3 rounded-lg border text-[#02295a] text-[15px] hover:border-[#02295a] focus:border-white focus:ring-[#bfe2fd]`}
-      placeholder={placeholder}
-    />
-  </div>
-);
-
-// Main ModalEdit component
+import FormField from "./FormField";
 export default function ModalEdit({
   show,
   handleClose,
@@ -36,7 +14,7 @@ export default function ModalEdit({
   handleExperienceChange,
   handleEducationChange,
 }) {
-  if (!show) return null; // Do not show modal if "show" is false
+  if (!show) return null;
 
   // Functions to add or remove education
   const addEducation = () => {
@@ -51,11 +29,12 @@ export default function ModalEdit({
     const newEducation = formData.educations.filter((_, i) => i !== index);
     handleChange({ target: { name: "educations", value: newEducation } });
   };
+
   const removeSkill = (index) => {
-    console.log(index);
     const newSkill = formData.skills.filter((_, i) => i !== index);
     handleChange({ target: { name: "skills", value: newSkill } });
   };
+
   // Functions to add or remove experience
   const addExperience = () => {
     const newExperience = [
@@ -82,39 +61,27 @@ export default function ModalEdit({
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
         <div className="p-6">
-          <h2 className="text-xl font-semibold">Edit {section}</h2>
-          <h3>Fill in the fields you wish to edit.</h3>
+          <div className="flex justify-between">
+            <h2 className="text-xl font-semibold">Edit {section}</h2>
+            <div onClick={handleClose} className="cursor-pointer text-xl">
+              X
+            </div>
+          </div>
 
-          {/* Form for editing different sections */}
           <div className="mt-4">
-            {/* Personal Info Section */}
             {section === "personalInfo" && (
               <>
-                <InputField
+                <FormField
                   label="Full Name"
                   name="name"
                   value={formData.name}
-                  onChange={handleChange}
+                  onChangeYourInfo={handleChange}
                   placeholder="Name"
+                  type="text"
                 />
-                <InputField
-                  label="Proficiency"
-                  name="proficiency"
-                  value={formData.proficiency}
-                  onChange={handleChange}
-                  placeholder="Proficiency"
-                />
-                <InputField
-                  label="Location"
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  placeholder="Location"
-                />
-                <InputField
+                <FormField
                   label="Profile Picture"
                   name="profileImage"
-                  type="file"
                   onChange={(e) =>
                     handleChange({
                       target: {
@@ -123,43 +90,133 @@ export default function ModalEdit({
                       },
                     })
                   }
+                  type="file"
+                  placeholder="Upload Profile Picture"
                 />
-                <InputField
+                <FormField
                   label="Resume file"
                   name="resume"
-                  type="file"
                   onChange={(e) =>
                     handleChange({
                       target: { name: "resume", value: e.target.files[0] },
                     })
                   }
+                  type="file"
+                  placeholder="Upload Resume"
+                />
+                <FormField
+                  label="Resume file"
+                  name="resume"
+                  value={formData.resume}
+                  onChangeYourInfo={(e) =>
+                    handleChange({
+                      target: {
+                        name: "resume",
+                        value: e.target.files[0],
+                      },
+                    })
+                  }
+                  type="file"
+                  placeholder="Upload Resume"
                 />
               </>
             )}
 
-            {/* Skills Section */}
-            {section === "Skills" && (
+            {section === "AdditionalInfo" && (
               <>
-                <Skills
-                  skills={formData.skills}
-                  onChangeSkill={handleSkillChange}
-                  removeSkill={removeSkill}
+                <FormField
+                  label="Location"
+                  name="country"
+                  value={formData.country}
+                  onChangeYourInfo={handleChange}
+                  placeholder="Location"
+                  type="text"
+                />
+                <FormField
+                  label="Gender"
+                  name="gender"
+                  value={formData.gender}
+                  onChangeYourInfo={handleChange}
+                  type="select"
+                  options={[
+                    { value: "", label: "Select Gender" },
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                    { value: "other", label: "Other" },
+                  ]}
+                />
+                <FormField
+                  label="Birth Date"
+                  name="birth_Date"
+                  value={formData.birth_Date}
+                  onChangeYourInfo={handleChange}
+                  type="date"
+                  placeholder="Birth Date"
                 />
               </>
             )}
 
-            {/* Experience Section */}
-            {section === "experience" && (
-              <div>
-                <Experience
-                  experiences={formData.experiences}
-                  onChangeExperienceInfo={handleExperienceChange}
-                  addExperienceInfo={addExperience}
+            {section === "about" && (
+              <>
+                <FormField
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChangeYourInfo={handleChange}
+                  placeholder="Description"
+                  type="long"
                 />
-              </div>
+                <FormField
+                  label="Email"
+                  name="email"
+                  value={formData.email}
+                  onChangeYourInfo={handleChange}
+                  placeholder="Email"
+                  type="email"
+                />
+                <FormField
+                  label="Github Link"
+                  name="github_link"
+                  value={formData.github_link}
+                  onChangeYourInfo={handleChange}
+                  placeholder="Github Link"
+                  type="text"
+                />
+                <FormField
+                  label="LinkedIn Link"
+                  name="linkedin_link"
+                  value={formData.linkedin_link}
+                  onChangeYourInfo={handleChange}
+                  placeholder="LinkedIn Link"
+                  type="text"
+                />
+                <FormField
+                  label="Portfolio Link"
+                  name="portfolio_link"
+                  value={formData.portfolio_link}
+                  onChangeYourInfo={handleChange}
+                  placeholder="Portfolio Link"
+                  type="text"
+                />
+              </>
             )}
 
-            {/* Education Section */}
+            {section === "Skills" && (
+              <Skills
+                skills={formData.skills}
+                onChangeSkill={handleSkillChange}
+                removeSkill={removeSkill}
+              />
+            )}
+
+            {section === "experience" && (
+              <Experience
+                experiences={formData.experiences}
+                onChangeExperienceInfo={handleExperienceChange}
+                addExperienceInfo={addExperience}
+              />
+            )}
+
             {section === "education" && (
               <Education
                 educations={formData.educations}
@@ -167,70 +224,21 @@ export default function ModalEdit({
                 addEducationInfo={addEducation}
                 removeEducation={removeEducation}
               />
-              //   {formData.educations.map((edu, index) => (
-              //     <div
-              //       key={index}
-              //       className="mb-4 border p-3 rounded grid grid-cols-1 md:grid-cols-2 gap-4"
-              //     >
-              //       <InputField
-              //         label="Institution"
-              //         name={`institution-${index}`}
-              //         value={edu.institution}
-              //         onChange={(e) => handleEducationChange(e, index)}
-              //         placeholder="Institution"
-              //       />
-              //       <InputField
-              //         label="Degree"
-              //         name={`degree-${index}`}
-              //         value={edu.degree}
-              //         onChange={(e) => handleEducationChange(e, index)}
-              //         placeholder="Degree"
-              //       />
-              //       <InputField
-              //         label="Start Date"
-              //         name={`startDate-${index}`}
-              //         value={edu.startDate}
-              //         onChange={(e) => handleEducationChange(e, index)}
-              //         placeholder="Start Date"
-              //       />
-              //       <InputField
-              //         label="End Date"
-              //         name={`endDate-${index}`}
-              //         value={edu.endDate}
-              //         onChange={(e) => handleEducationChange(e, index)}
-              //         placeholder="End Date"
-              //       />
-              //       <button
-              //         onClick={() => removeEducation(index)} // Handle deletion
-              //         className="text-red-500"
-              //       >
-              //         Delete Education
-              //       </button>
-              //     </div>
-              //   ))}
-              //   <button
-              //     onClick={addEducation}
-              //     className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
-              //   >
-              //     Add Education
-              //   </button>
-              // </div>
             )}
-
-            {/* Submit Button */}
-            <button
-              onClick={handleSubmit}
-              className="bg-green-500 text-white px-4 py-2 rounded mt-4"
-            >
-              Save Changes
-            </button>
-            {/* Close Button */}
-            <button
-              onClick={handleClose}
-              className="bg-red-500 text-white px-4 py-2 rounded mt-2"
-            >
-              Close
-            </button>
+            <div className="flex justify-end items-end space-x-2">
+              <button
+                onClick={handleClose}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded mt-2"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       </div>

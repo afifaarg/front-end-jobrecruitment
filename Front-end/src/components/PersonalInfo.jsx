@@ -2,48 +2,42 @@ import React, { useEffect, useState } from "react";
 import FormField from "./FormField";
 import SectionHeading from "./SectionHeading";
 
-export default function YourInfo({ yourInfo, onChangeYourInfo, isEmpty }) {
+export default function PersonalInfo({ yourInfo, onChangeYourInfo, isEmpty }) {
   const [formFields, setFormFields] = useState([
-    {
-      id: 1,
-      name: "name",
-      type: "text",
-      label: "Full Name",
-      placeholder: "e.g Harry Potter",
-    },
+    // {
+    //   id: 1,
+    //   name: "profile_pic",
+    //   type: "file",
+    //   label: "Profile Picture",
+    //   placeholder: "Upload your profile picture",
+    // },
     {
       id: 2,
-      name: "email",
-      type: "email",
-      label: "Email Address",
-      placeholder: "e.g harry@gmail.com",
+      name: "gender",
+      type: "select",
+      label: "Gender",
+      options: [
+        { value: "", label: "Select Gender" },
+        { value: "male", label: "Male" },
+        { value: "female", label: "Female" },
+        { value: "other", label: "Other" },
+      ],
     },
     {
       id: 3,
-      name: "phone",
-      type: "text",
-      label: "Phone Number",
-      placeholder: "e.g +91 234 567 890",
+      name: "birth_Date",
+      type: "date",
+      label: "Birth Date",
+      placeholder: "Select your birth date",
     },
     {
       id: 4,
-      name: "country",
-      type: "text",
-      label: "Country",
-      placeholder: "e.g India",
-    },
-    {
-      id: 5,
-      name: "city",
-      type: "text",
-      label: "City",
-      placeholder: "e.g Mumbai",
+      name: "description",
+      type: "long",
+      label: "Description",
+      placeholder: "Describe yourself",
     },
   ]);
-
-  // useEffect(() => {
-  //   console.log(isEmpty);
-  // }, [isEmpty]);
 
   return (
     <div>
@@ -62,6 +56,7 @@ export default function YourInfo({ yourInfo, onChangeYourInfo, isEmpty }) {
               placeholder={formField.placeholder}
               value={yourInfo[formField.name]}
               type={formField.type}
+              options={formField.options} // Pass options for select fields
               isEmpty={isEmpty}
             />
           ))}

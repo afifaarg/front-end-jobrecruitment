@@ -19,25 +19,31 @@ WORK_PREFERENCE_CHOICES = [
     ("hybrid", "Hybrid"),
 ]
 
+gender_CHOICES = [
+        ("male", "Male"),
+        ("female", "Female"),
+]
 class PlatformUser(User):
     ROLE_CHOICES = [
         ("admin", "Admin"),
         ("employee", "Employee"),
     ]
     
-    unique_id = models.CharField(max_length=11, unique=True)
+    unique_id = models.CharField(max_length=11, unique=True, null=True, blank=True)
     name = models.CharField(max_length=150)
-    country = models.CharField(max_length=250, default="")
-    description = models.TextField(default="")
-    city = models.CharField(max_length=250, default="")
-    phone = models.CharField(max_length=150, default="")
-    github_link = models.CharField(max_length=250, default="")
-    linkedin_link = models.CharField(max_length=250, default="")
-    portfolio_link = models.CharField(max_length=250, default="")
-    resume_file = models.FileField(default="")
-    proficiency = models.CharField(max_length=250, default="")
-    availability = models.CharField(max_length=250, default="")
-    role = models.CharField(max_length=30, choices=ROLE_CHOICES, default="employee")
+    country = models.CharField(max_length=250, default="" , null=True, blank=True)
+    description = models.TextField(default="", null=True, blank=True)
+    city = models.CharField(max_length=250, default="", null=True, blank=True)
+    phone = models.CharField(max_length=150, default="", null=True, blank=True)
+    github_link = models.CharField(max_length=250, default="", null=True, blank=True)
+    linkedin_link = models.CharField(max_length=250, default="", null=True, blank=True)
+    portfolio_link = models.CharField(max_length=250, default="", null=True, blank=True)
+    profile_pic = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    resume_file = models.FileField(upload_to='resumes/', null=True, blank=True)
+    gender = models.CharField(max_length=30, choices=gender_CHOICES, default="", null=True, blank=True)
+    birth_Date = models.DateField(default="1999-01-01", null=True, blank=True)
+    proficiency = models.CharField(max_length=250, default="", null=True, blank=True)
+    role = models.CharField(max_length=30, choices=ROLE_CHOICES, default="employee", null=True, blank=True)
 
     def __str__(self):
         return self.username
@@ -55,6 +61,7 @@ class PlatformUser(User):
         return round(total_years, 0)  # Round to 2 decimal places
     
 class DesiredJob(models.Model):
+    user = models.ForeignKey(PlatformUser, on_delete=models.CASCADE, related_name="desired_job", default=None, blank=True, null=True)
     job_title = models.CharField(max_length=150)
     description = models.TextField(blank=True, null=True)
     salary_expectation = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
@@ -69,7 +76,7 @@ class DesiredJob(models.Model):
 
 class Skill(models.Model):
     user = models.ForeignKey(PlatformUser, on_delete=models.CASCADE, related_name="skills")
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100, unique=False)
 
     def __str__(self):
         return self.name

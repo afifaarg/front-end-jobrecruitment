@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import NavBar from "../components/Navbar";
 import Modaledit from "../components/Modaledit";
+import axios from "axios";
 export default function ProfileComponent() {
   const [manipulableJson, setManipulableJson] = useState(null);
 
@@ -15,57 +16,121 @@ export default function ProfileComponent() {
 
   // Fetching user data from localStorage
   useEffect(() => {
-    const data = localStorage.getItem("userData"); // Replace with your localStorage key
-    if (data) {
-      const userData = JSON.parse(data); // Parse the JSON string to an object
-      console.log(userData);
-      // Construct manipulableJson from userData
-      const manipulableJson = {
-        username: userData.username,
-        password: userData.password, // Keep password only if needed
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone,
-        uniqueID: userData.uniqueID,
-        experienceYears: userData.experienceYears,
-        country: userData.country,
-        city: userData.city,
-        description: userData.description || "", // Fallback for undefined
-        skills: userData.skills || [], // Default to empty array if no skills
-        educations: userData.educations
-          ? userData.educations.map((edu) => ({
-              degree: edu.degree,
-              field: edu.field,
-              institution: edu.institution,
-              start_date: edu.start_date,
-              end_date: edu.end_date,
-              description: edu.description || "", // Fallback for undefined
-            }))
-          : [],
-        experiences: userData.experiences
-          ? userData.experiences.map((exp) => ({
-              job_title: exp.job_title,
-              company: exp.company,
-              location: exp.location,
-              start_date: exp.start_date,
-              end_date: exp.end_date,
-              responsibilities: exp.responsibilities || "", // Fallback for undefined
-            }))
-          : [],
-      };
+    const userId = localStorage.getItem("userID");
 
-      setManipulableJson(manipulableJson); // Update state with manipulableJson
+    if (userId) {
+      // Fetch user details using the user ID
+      axios
+        .get(`http://localhost:8000/backendAPI/users/${userId}/`)
+        .then((response) => {
+          // Log the full response to ensure the structure is correct
+          console.log(response);
+
+          // Access the data from the response
+          const userData = response.data;
+
+          // Construct manipulableJson from userData
+          const manipulableJson = {
+            id: userData.id,
+            username: userData.username,
+            name: userData.name,
+            email: userData.email,
+            phone: userData.phone,
+            country: userData.country,
+            city: userData.city,
+            description: userData.description,
+            role: userData.role,
+            github_link: userData.github_link,
+            linkedin_link: userData.linkedin_link,
+            portfolio_link: userData.portfolio_link,
+            resume_file: userData.resume_file,
+            proficiency: userData.proficiency,
+            profile_pic: userData.profile_pic,
+            gender: userData.gender,
+            birth_Date: userData.birth_Date,
+            experienceYears: userData.experienceYears,
+            uniqueID: userData.unique_id,
+            skills: Array.isArray(userData.skills)
+              ? userData.skills.map((skill) => skill.name)
+              : [],
+            educations: userData.educations || [], // Fallback to empty array if undefined
+            experiences: userData.experiences || [], // Fallback to empty array if undefined
+          };
+
+          // Update the state with manipulableJson
+          setManipulableJson(manipulableJson);
+
+          // Store the manipulableJson in localStorage
+          localStorage.setItem("userData", JSON.stringify(manipulableJson));
+        })
+        .catch((error) => {
+          console.error("Failed to fetch user data:", error);
+        });
+    } else {
+      console.log("No user ID found in localStorage");
     }
   }, []);
 
   // Handle input changes in the modal
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    // Update the formData state with the new changes
+    const { name, type, files } = e.target;
+
+    if (type === "file") {
+      // If the input is a file, set the file
+      setFormData({
+        ...formData,
+        [name]: files[0], // Only set the first file if multiple files are not allowed
+      });
+    } else {
+      // For other input types, set the value as usual
+      setFormData({
+        ...formData,
+        [name]: e.target.value,
+      });
+    }
   };
 
+  // Function to update user using Axios
+  const updateUser = async (id, data) => {
+    try {
+      // Logging data being sent
+      console.log("Data to update:", data);
+
+      // Retrieve the access token from localStorage
+      const accessToken = localStorage.getItem("access");
+      if (!accessToken) {
+        console.error("Access token not found. Redirecting to login.");
+        // Handle token absence, maybe redirect to login
+        return;
+      }
+
+      // Make the PATCH request to update the user
+      const response = await axios.patch(
+        `http://127.0.0.1:8000/backendAPI/users/${id}/`, // Replace with your actual backend API URL
+        data,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`, // Include the JWT token in the request headers
+          },
+        }
+      );
+
+      // Log the successful update response
+      alert("Profile updated successfully");
+
+      // Optionally return the updated user data for further processing
+      return response.data;
+    } catch (error) {
+      // Check if error has a response from the server
+      if (error.response) {
+        console.error("Error updating user:", error.response.data);
+      } else {
+        console.error("Error updating user:", error.message);
+      }
+    }
+  };
   // Handle editing button click
   const handleEditClick = (section) => {
     setCurrentSection(section);
@@ -87,8 +152,11 @@ export default function ProfileComponent() {
       "userData",
       JSON.stringify({ ...manipulableJson, ...formData })
     );
+    // Call the updateUser function, passing the user id and updated formData
+    updateUser(formData.id, formData); // Make sure formData contains the id
     handleCloseModal();
   };
+
   const handleEducationChange = (index, value) => {
     console.log(formData.educations);
     const updatedEducations = [...formData.educations];
@@ -99,6 +167,7 @@ export default function ProfileComponent() {
       educations: updatedEducations,
     }));
   };
+
   const handleExperienceChange = (index, value) => {
     const updatedExperiences = [...formData.experiences];
     updatedExperiences[index] = value; // Update the specific entry
@@ -107,13 +176,9 @@ export default function ProfileComponent() {
       experiences: updatedExperiences,
     }));
   };
-  const handleSkillsChange = (index, value) => {
-    const updatedSkills = [...formData.skills];
-    updatedSkills[index] = value; // Update the specific entry
-    setFormData((prevData) => ({
-      ...prevData,
-      skills: updatedSkills,
-    }));
+
+  const handleSkillChange = (newSkills) => {
+    handleChange({ target: { name: "skills", value: newSkills } });
   };
 
   if (!manipulableJson) {
@@ -165,7 +230,7 @@ export default function ProfileComponent() {
                   </a>
                 </div>
                 <div className="text-sm text-gray-400 mb-7">
-                  Senior Developer
+                  {manipulableJson.proficiency}
                 </div>
                 <div className="flex group">
                   <button className="transform active:scale-95 bg-blue-500 hover:bg-blue-400 text-white px-4 py-4 rounded-lg font-bold tracking-widest w-full ">
@@ -226,8 +291,8 @@ export default function ProfileComponent() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="font-semibold text-xl">Information</h2>
                 <a
-                  onClick={() => handleEditClick("General informations")}
-                  className="text-blue-500 outline-none hover:text-blue-600 py-2 rounded curso"
+                  onClick={() => handleEditClick("AdditionalInfo")}
+                  className="text-blue-500 outline-none hover:text-blue-600 py-2 rounded cursor-pointer"
                 >
                   <svg
                     fill="none"
@@ -258,9 +323,15 @@ export default function ProfileComponent() {
                   </div>
                 </div>
                 <div className="flex justify-between">
-                  <div className="text-gray-400">Availability</div>
+                  <div className="text-gray-400">Gender</div>
                   <div className="font-medium text-right text-gray-600">
-                    1 week
+                    {manipulableJson.gender}
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <div className="text-gray-400">Birth Date</div>
+                  <div className="font-medium text-right text-gray-600">
+                    {manipulableJson.birth_Date}
                   </div>
                 </div>
               </div>
@@ -344,7 +415,10 @@ export default function ProfileComponent() {
 
                 <ul className="flex items-center space-x-5">
                   <li>
-                    <a href="#0" className="hover:text-primary">
+                    <a
+                      href={manipulableJson.github_link}
+                      className="hover:text-primary"
+                    >
                       <svg
                         fill="currentColor"
                         viewBox="0 0 16 16"
@@ -356,7 +430,10 @@ export default function ProfileComponent() {
                     </a>
                   </li>
                   <li>
-                    <a href="#0" className="hover:text-primary">
+                    <a
+                      href={manipulableJson.linkedin_link}
+                      className="hover:text-primary"
+                    >
                       <svg
                         viewBox="0 0 512 512"
                         fill="currentColor"
@@ -368,7 +445,10 @@ export default function ProfileComponent() {
                     </a>
                   </li>
                   <li>
-                    <a href="#0" className="hover:text-primary">
+                    <a
+                      href={manipulableJson.portfolio_link}
+                      className="hover:text-primary"
+                    >
                       <svg
                         viewBox="0 0 1024 1024"
                         fill="currentColor"
@@ -396,14 +476,6 @@ export default function ProfileComponent() {
                 <li>
                   <a href="#educations" className="menu-link menu-link-hover">
                     Education
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/personal_cv/blog.html"
-                    className="menu-link menu-link-hover"
-                  >
-                    Desired Job
                   </a>
                 </li>
               </ul>
@@ -649,7 +721,7 @@ export default function ProfileComponent() {
           handleSubmit={handleSubmit}
           handleEducationChange={handleEducationChange}
           handleExperienceChange={handleExperienceChange}
-          handleSkillChange={handleSkillsChange}
+          handleSkillChange={handleSkillChange}
           section={currentSection}
         />
       </main>

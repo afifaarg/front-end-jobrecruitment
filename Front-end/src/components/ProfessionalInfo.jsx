@@ -2,48 +2,48 @@ import React, { useEffect, useState } from "react";
 import FormField from "./FormField";
 import SectionHeading from "./SectionHeading";
 
-export default function YourInfo({ yourInfo, onChangeYourInfo, isEmpty }) {
+export default function ProfessionalInfo({
+  yourInfo,
+  onChangeYourInfo,
+  isEmpty,
+}) {
   const [formFields, setFormFields] = useState([
     {
       id: 1,
-      name: "name",
-      type: "text",
-      label: "Full Name",
-      placeholder: "e.g Harry Potter",
+      name: "github_link",
+      type: "url",
+      label: "GitHub Link",
+      placeholder: "e.g https://github.com/yourusername",
+    },
+    {
+      id: 1,
+      name: "linkedin_link",
+      type: "url",
+      label: "LinkedIn Link",
+      placeholder: "e.g https://linkedin.com/in/yourprofile",
     },
     {
       id: 2,
-      name: "email",
-      type: "email",
-      label: "Email Address",
-      placeholder: "e.g harry@gmail.com",
+      name: "portfolio_link",
+      type: "url",
+      label: "Portfolio Link",
+      placeholder: "e.g https://yourportfolio.com",
     },
     {
       id: 3,
-      name: "phone",
-      type: "text",
-      label: "Phone Number",
-      placeholder: "e.g +91 234 567 890",
+      name: "resume_file",
+      type: "file",
+      label: "Resume File",
+      placeholder: "Upload your resume",
     },
     {
       id: 4,
-      name: "country",
+      name: "proficiency",
       type: "text",
-      label: "Country",
-      placeholder: "e.g India",
-    },
-    {
-      id: 5,
-      name: "city",
-      type: "text",
-      label: "City",
-      placeholder: "e.g Mumbai",
+      label: "Proficiency",
+      placeholder: "e.g Software Engineer, Graphic designer",
     },
   ]);
-
-  // useEffect(() => {
-  //   console.log(isEmpty);
-  // }, [isEmpty]);
 
   return (
     <div>
@@ -62,6 +62,7 @@ export default function YourInfo({ yourInfo, onChangeYourInfo, isEmpty }) {
               placeholder={formField.placeholder}
               value={yourInfo[formField.name]}
               type={formField.type}
+              options={formField.options} // Pass options for select fields
               isEmpty={isEmpty}
             />
           ))}
